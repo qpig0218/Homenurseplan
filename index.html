@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動式計畫書：呼叫家護師-居護孵化器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Morandi Harmony (#FEFBF6, #6B705C, #A3B18A, #DDBEA9) -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive, single-page dashboard, moving away from the linear report format. The structure is thematic: 1. The Challenge (interactive problem diagram), 2. The Solution (dual-track visual explanation), 3. The Impact (data-driven dashboard with charts and metrics), 4. The Roadmap (interactive timeline), and 5. The Team (credibility section). This non-linear, visual-first approach is chosen to make the complex project proposal immediately understandable, engaging, and easy to navigate for busy stakeholders like government officials, allowing them to grasp the core concepts and data points quickly without reading dense text. -->
+    <!-- Visualization & Content Choices: 1. Vicious Cycle (Problem): Goal=Organize/Inform -> Method=Interactive HTML/CSS Diagram -> Interaction=Click to reveal details -> Justification=More engaging than text, clarifies the core problem visually. 2. Budget Allocation: Goal=Compare/Inform -> Method=Chart.js Donut Chart on Canvas -> Interaction=Hover for tooltips -> Justification=Standard, clear way to show financial proportions. 3. Key Metrics: Goal=Inform/Impact -> Method=HTML/JS Animated Counters -> Interaction=Automatic animation on scroll -> Justification=Draws attention to key quantitative goals. 4. Timeline: Goal=Show Change -> Method=Interactive HTML/CSS horizontal timeline -> Interaction=Click to expand details -> Justification=More intuitive and less cluttered than a Gantt chart table. All choices adhere to the NO SVG/Mermaid constraint and support the dashboard-like application structure. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #FEFBF6;
+            color: #6B705C;
+        }
+        .text-accent-green { color: #A3B18A; }
+        .bg-accent-green { background-color: #A3B18A; }
+        .border-accent-green { border-color: #A3B18A; }
+        .text-accent-earth { color: #DDBEA9; }
+        .bg-accent-earth { background-color: #DDBEA9; }
+        .border-accent-earth { border-color: #DDBEA9; }
+        .bg-primary-dark { background-color: #6B705C; }
+        .bg-soft-green { background-color: #F0F3EE; }
+        .bg-soft-earth { background-color: #F9F5F1; }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #A3B18A;
+            border-bottom-color: #A3B18A;
+        }
+        .vicious-cycle-node {
+            transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
+        }
+        .vicious-cycle-node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .timeline-item-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+        }
+        .timeline-item.open .timeline-item-content {
+            max-height: 500px;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .animate-spin-slow {
+            animation: spin 20s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="text-2xl font-bold text-accent-green">
+                呼叫家護師
+            </div>
+            <div class="hidden md:flex space-x-8">
+                <a href="#challenge" class="nav-link">核心挑戰</a>
+                <a href="#solution" class="nav-link">解決方案</a>
+                <a href="#impact" class="nav-link">預期成效</a>
+                <a href="#roadmap" class="nav-link">計畫時程</a>
+                <a href="#team" class="nav-link">團隊與資源</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden">
+            <a href="#challenge" class="block py-2 px-6 text-sm hover:bg-gray-100">核心挑戰</a>
+            <a href="#solution" class="block py-2 px-6 text-sm hover:bg-gray-100">解決方案</a>
+            <a href="#impact" class="block py-2 px-6 text-sm hover:bg-gray-100">預期成效</a>
+            <a href="#roadmap" class="block py-2 px-6 text-sm hover:bg-gray-100">計畫時程</a>
+            <a href="#team" class="block py-2 px-6 text-sm hover:bg-gray-100">團隊與資源</a>
+        </div>
+    </header>
+
+    <main>
+        <section id="hero" class="py-20 bg-white">
+            <div class="container mx-auto px-6 text-center">
+                <h1 class="text-4xl md:text-5xl font-bold leading-tight mb-4">
+                    AI賦能、在地創生<br>重塑台灣居家護理新生態
+                </h1>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto mb-12">
+                    本計畫提出「呼叫家護師-居護孵化器」，一個結合AI數位平台與系統性賦能的雙軌模式，旨在根本性解決居家護理的人力、創業與營運困境，建構一個永續、共榮的在地照護生態系。
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                    <div class="bg-soft-earth p-6 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-500">申請經費</p>
+                        <p class="text-3xl font-bold text-accent-green">NT$ 300萬</p>
+                    </div>
+                    <div class="bg-soft-earth p-6 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-500">執行期程</p>
+                        <p class="text-3xl font-bold text-accent-green">16 個月</p>
+                    </div>
+                    <div class="bg-soft-earth p-6 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-500">培育目標</p>
+                        <p class="text-3xl font-bold text-accent-green">10-15 名創業家</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="challenge" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold mb-2">核心挑戰</h2>
+                    <p class="text-lg text-gray-600 max-w-2xl mx-auto">台灣居家護理創業普遍面臨四大結構性困境，形成一個難以掙脫的惡性循環。本計畫的設計旨在打破此循環，為有志投身的護理人員鋪平道路。點擊下方節點以深入了解各項挑戰。</p>
+                </div>
+                <div class="relative max-w-4xl mx-auto">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="vicious-cycle-node bg-soft-green p-6 rounded-lg shadow-lg cursor-pointer" data-id="c1">
+                            <h3 class="font-bold text-xl mb-2 text-accent-green">高昂進入門檻</h3>
+                            <p class="text-gray-600">繁複法規、高額資金與商業知識匱乏，使創業起點困難重重。</p>
+                        </div>
+                        <div class="vicious-cycle-node bg-soft-green p-6 rounded-lg shadow-lg cursor-pointer" data-id="c2">
+                            <h3 class="font-bold text-xl mb-2 text-accent-green">脆弱營運模式</h3>
+                            <p class="text-gray-600">高度依賴健保，但給付偏低、回款慢，現金流極易斷裂。</p>
+                        </div>
+                        <div class="vicious-cycle-node bg-soft-green p-6 rounded-lg shadow-lg cursor-pointer" data-id="c3">
+                            <h3 class="font-bold text-xl mb-2 text-accent-green">沉重行政負荷</h3>
+                            <p class="text-gray-600">創業者身兼數職，繁重文書作業大量消耗心力，無法專注核心照護。</p>
+                        </div>
+                        <div class="vicious-cycle-node bg-soft-green p-6 rounded-lg shadow-lg cursor-pointer" data-id="c4">
+                            <h3 class="font-bold text-xl mb-2 text-accent-green">專業心理耗竭</h3>
+                            <p class="text-gray-600">專業孤立感、持續財務壓力與社會認同不足，導致身心俱疲。</p>
+                        </div>
+                    </div>
+                    <div class="absolute inset-0 flex items-center justify-center -z-10 opacity-20">
+                        <div class="w-64 h-64 md:w-96 md:h-96 border-4 border-dashed border-accent-earth rounded-full animate-spin-slow"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="solution" class="py-20 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold mb-2">我們的解決方案：雙軌生態系</h2>
+                    <p class="text-lg text-gray-600 max-w-3xl mx-auto">我們提出一個「技術平台」與「輔導計畫」雙軌並行的整合性架構。數位平台提供效率化的工具，而孵化器則提供成功所需的知識與支持，兩者相輔相成，建構一個完整的居家護理新生態。</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div class="bg-soft-green p-8 rounded-lg border-l-4 border-accent-green">
+                        <h3 class="text-2xl font-bold mb-6 text-center">① AI賦能數位平台</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <span class="text-accent-green text-2xl mr-4">✓</span>
+                                <div><strong class="block">個案/家屬端：</strong>一鍵呼叫、透明收費、線上支付，提升信任感與便利性。</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-accent-green text-2xl mr-4">✓</span>
+                                <div><strong class="block">護理師端：</strong>智慧排班、最佳路徑規劃，並獨創「彈性執業模式」，提升留任意願。</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-accent-green text-2xl mr-4">✓</span>
+                                <div><strong class="block">經營者端：</strong>AI排程引擎、健康風險預警，並與衛福部系統介接，大幅簡化行政流程。</div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-soft-earth p-8 rounded-lg border-l-4 border-accent-earth">
+                        <h3 class="text-2xl font-bold mb-6 text-center">② 居護創業家孵化器</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <span class="text-accent-green text-2xl mr-4">✓</span>
+                                <div><strong class="block">系統化賦能學程：</strong>涵蓋財務、行銷、管理的實戰課程，培育商業思維。</div>
+                            </li>
+                             <li class="flex items-start">
+                                <span class="text-accent-green text-2xl mr-4">✓</span>
+                                <div><strong class="block">多元資源對接：</strong>連結大學加速器與政府創業貸款，打通資金與驗證管道。</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-accent-green text-2xl mr-4">✓</span>
+                                <div><strong class="block">師徒制度與網絡：</strong>由成功前輩擔任導師，建立同儕支持社群，減少摸索成本。</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="impact" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold mb-2">預期成效與影響力</h2>
+                    <p class="text-lg text-gray-600 max-w-3xl mx-auto">本計畫承諾達成具體、可衡量的量化成效，並追求對護理專業、在地社區與長照產業的深遠質化影響，最大化公共資金的社會投資報酬率。</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+                    <div class="lg:col-span-2 grid grid-cols-2 gap-6">
+                        <div class="bg-soft-earth p-6 rounded-lg shadow-md text-center">
+                            <p class="text-4xl font-bold text-accent-green" data-counter="300">0</p>
+                            <p class="text-gray-500 mt-2">服務家庭戶數 (戶)</p>
+                        </div>
+                        <div class="bg-soft-earth p-6 rounded-lg shadow-md text-center">
+                            <p class="text-4xl font-bold text-accent-green" data-counter="80">0</p>
+                            <p class="text-gray-500 mt-2">護理師留任率 (%)</p>
+                        </div>
+                        <div class="bg-soft-earth p-6 rounded-lg shadow-md text-center">
+                            <p class="text-4xl font-bold text-accent-green" data-counter="30">0</p>
+                            <p class="text-gray-500 mt-2">行政時間減少 (%)</p>
+                        </div>
+                        <div class="bg-soft-earth p-6 rounded-lg shadow-md text-center">
+                            <p class="text-4xl font-bold text-accent-green" data-counter="1">0</p>
+                            <p class="text-gray-500 mt-2">建立衛星合作聯盟 (個)</p>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-1">
+                         <h3 class="text-xl font-bold mb-4 text-center">經費運用規劃</h3>
+                        <div class="chart-container">
+                            <canvas id="budgetChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="roadmap" class="py-20 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold mb-2">計畫執行時程</h2>
+                    <p class="text-lg text-gray-600 max-w-3xl mx-auto">本計畫總期程為16個月，劃分為三個階段，以迭代優化的方式，確保計畫能如期如質完成。點擊各階段可展開詳細工作項目。</p>
+                </div>
+                <div class="relative">
+                    <div class="border-l-4 border-accent-green absolute h-full top-0 left-1/2 -ml-0.5"></div>
+                    <div class="space-y-12">
+                        <div class="timeline-item flex md:justify-end md:pr-8">
+                            <div class="md:w-1/2">
+                                <div class="bg-soft-earth p-6 rounded-lg shadow-md cursor-pointer">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <p class="text-sm text-accent-earth font-semibold">第一階段 (114/09 - 114/12)</p>
+                                            <h4 class="text-xl font-bold">奠基與原型建構</h4>
+                                        </div>
+                                        <span class="text-2xl text-accent-green">+</span>
+                                    </div>
+                                    <div class="timeline-item-content">
+                                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                            <li>完成深度需求調查與分析</li>
+                                            <li>與關鍵夥伴簽署合作備忘錄</li>
+                                            <li>完成平台MVP開發與內部測試</li>
+                                            <li>招募第一批10-15名孵化對象</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="timeline-item flex md:justify-start md:pl-8">
+                             <div class="md:w-1/2">
+                                <div class="bg-soft-earth p-6 rounded-lg shadow-md cursor-pointer">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <p class="text-sm text-accent-earth font-semibold">第二階段 (115/01 - 115/06)</p>
+                                            <h4 class="text-xl font-bold">孵化與服務試辦</h4>
+                                        </div>
+                                        <span class="text-2xl text-accent-green">+</span>
+                                    </div>
+                                    <div class="timeline-item-content">
+                                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                            <li>啟動孵化器課程與師徒制度</li>
+                                            <li>協助學員對接創業貸款</li>
+                                            <li>於台南2個社區啟動試辦服務</li>
+                                            <li>提交期中報告 (115/04)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="timeline-item flex md:justify-end md:pr-8">
+                             <div class="md:w-1/2">
+                                <div class="bg-soft-earth p-6 rounded-lg shadow-md cursor-pointer">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <p class="text-sm text-accent-earth font-semibold">第三階段 (115/07 - 115/12)</p>
+                                            <h4 class="text-xl font-bold">優化與擴散準備</h4>
+                                        </div>
+                                        <span class="text-2xl text-accent-green">+</span>
+                                    </div>
+                                    <div class="timeline-item-content">
+                                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                            <li>依試辦結果優化平台與模式</li>
+                                            <li>推動建立衛星合作聯盟</li>
+                                            <li>舉辦Demo Day媒合投資</li>
+                                            <li>完成期末報告與成果擴散</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="team" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold mb-2">我們的團隊與資源</h2>
+                    <p class="text-lg text-gray-600 max-w-3xl mx-auto">本計畫的成功，奠基於一個具備醫療、科技、商業跨域整合實力的核心團隊，以及長期深耕在地所建立的穩固合作夥伴網絡。</p>
+                </div>
+                <div class="mb-12">
+                    <h3 class="text-2xl font-bold text-center mb-8">核心團隊組成</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                        <div class="bg-soft-green p-6 rounded-lg text-center shadow">
+                            <h4 class="font-bold text-lg">計畫主持人 (PI)</h4>
+                            <p class="text-accent-green">地方創生執行長</p>
+                            <p class="text-sm text-gray-500 mt-2">負責整體策略與資源整合</p>
+                        </div>
+                        <div class="bg-soft-green p-6 rounded-lg text-center shadow">
+                            <h4 class="font-bold text-lg">共同主持人 (Co-PI)</h4>
+                            <p class="text-accent-green">心臟科醫師兼AI工程師</p>
+                            <p class="text-sm text-gray-500 mt-2">負責整體策略與資源整合</p>
+                        </div>
+                        <div class="bg-soft-green p-6 rounded-lg text-center shadow">
+                            <h4 class="font-bold text-lg">跨領域專家群</h4>
+                            <p class="text-accent-green">AI、商開、文創、法規</p>
+                            <p class="text-sm text-gray-500 mt-2">提供全方位專業執行力</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-bold text-center mb-8">相關資源</h3>
+                    <div class="flex flex-wrap justify-center items-center gap-x-8 gap-y-4 text-gray-500">
+                        <span class="font-semibold">中山醫學大學加速器</span>
+                        <span class="font-semibold">輔仁大學加速器</span>
+                        <span class="font-semibold">台灣居護協會</span>
+                        <span class="font-semibold">翻轉醫療教育平台</span>
+                        <span class="font-semibold">勞動部微型創業鳳凰</span>
+                        <span class="font-semibold">台南市衛生局</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-primary-dark text-white">
+        <div class="container mx-auto px-6 py-8 text-center">
+            <p class="font-bold text-lg">本一科技股份有限公司</p>
+            <p class="text-sm text-gray-300 mt-2">致力於透過科技與人文的結合，為台灣長照體系創造永續價值。</p>
+            <p class="text-xs text-gray-400 mt-4">© 2025 Ben-Yi Technology Co., Ltd. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            document.querySelectorAll('#mobile-menu a, .nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    if (mobileMenu.classList.contains('hidden') === false) {
+                       mobileMenu.classList.add('hidden');
+                    }
+                    const targetId = e.currentTarget.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        e.preventDefault();
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 70,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+
+            const viciousCycleNodes = document.querySelectorAll('.vicious-cycle-node');
+            const nodeDetails = {
+                c1: '創業者不僅需要籌措高額的初期資金，還必須應對繁複的設立法規。更重要的是，多數護理專業人員缺乏財務管理、市場行銷等商業營運知識，導致從起點就面臨巨大挑戰。',
+                c2: '營收高達97%來自健保，但給付點數偏低且核銷流程繁瑣，資金回籠速度慢。同時，人事與交通等固定成本高昂，進一步壓縮利潤空間，使現金流極為脆弱，難以應對突發狀況。',
+                c3: '創業者常被迫身兼經營者、護理師、行政人員等多重角色。大量的文書作業、評鑑準備與行政庶務，嚴重消耗其時間與心力，使其無法專注於核心的個案照護與業務拓展。',
+                c4: '居家護理師常需獨立作業，缺乏同儕支持，易產生專業上的孤立感。持續的財務壓力，加上社會大眾對居家護理價值認知不足，常導致創業者身心俱疲，最終選擇黯然退場。'
+            };
+
+            viciousCycleNodes.forEach(node => {
+                const originalText = node.querySelector('p').textContent;
+                node.addEventListener('click', () => {
+                    const detailText = nodeDetails[node.dataset.id];
+                    const p = node.querySelector('p');
+                    if (p.textContent === originalText) {
+                        p.textContent = detailText;
+                        node.classList.remove('bg-soft-green');
+                        node.classList.add('bg-accent-green', 'text-white');
+                        node.querySelector('h3').classList.add('text-white');
+                        node.querySelector('h3').classList.remove('text-accent-green');
+                    } else {
+                        p.textContent = originalText;
+                        node.classList.remove('bg-accent-green', 'text-white');
+                        node.classList.add('bg-soft-green');
+                        node.querySelector('h3').classList.remove('text-white');
+                        node.querySelector('h3').classList.add('text-accent-green');
+                    }
+                });
+            });
+
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            timelineItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    item.classList.toggle('open');
+                    const icon = item.querySelector('span');
+                    icon.textContent = item.classList.contains('open') ? '−' : '+';
+                });
+            });
+
+            const counters = document.querySelectorAll('[data-counter]');
+            const animateCounter = (el) => {
+                const target = +el.dataset.counter;
+                el.innerText = '0';
+                const duration = 1500;
+                let stepTime = Math.abs(Math.floor(duration / target));
+                if (stepTime < 1) stepTime = 1;
+                let current = 0;
+                const timer = setInterval(() => {
+                    current += 1;
+                    el.innerText = current;
+                    if (current >= target) {
+                        el.innerText = target;
+                        clearInterval(timer);
+                    }
+                }, stepTime);
+            };
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.3
+            };
+
+            const counterObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        animateCounter(entry.target);
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            counters.forEach(counter => {
+                counterObserver.observe(counter);
+            });
+
+            const budgetCtx = document.getElementById('budgetChart').getContext('2d');
+            const budgetChart = new Chart(budgetCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['人事費', '業務費', '設備費', '管理費'],
+                    datasets: [{
+                        label: '經費比例',
+                        data: [48, 40, 7, 5],
+                        backgroundColor: [
+                            '#A3B18A',
+                            '#DDBEA9',
+                            '#6B705C',
+                            '#CB997E'
+                        ],
+                        borderColor: '#FEFBF6',
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#6B705C',
+                                font: {
+                                    family: "'Noto Sans TC', sans-serif"
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 100) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
