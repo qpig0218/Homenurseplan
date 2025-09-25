@@ -87,6 +87,7 @@
                 <a href="#solution" class="nav-link">解決方案</a>
                 <a href="#impact" class="nav-link">預期成效</a>
                 <a href="#roadmap" class="nav-link">計畫時程</a>
+                <a href="#ai-planner" class="nav-link">AI排程助理</a>
                 <a href="#team" class="nav-link">團隊與資源</a>
             </div>
             <button id="mobile-menu-button" class="md:hidden p-2">
@@ -100,6 +101,7 @@
             <a href="#solution" class="block py-2 px-6 text-sm hover:bg-gray-100">解決方案</a>
             <a href="#impact" class="block py-2 px-6 text-sm hover:bg-gray-100">預期成效</a>
             <a href="#roadmap" class="block py-2 px-6 text-sm hover:bg-gray-100">計畫時程</a>
+            <a href="#ai-planner" class="block py-2 px-6 text-sm hover:bg-gray-100">AI排程助理</a>
             <a href="#team" class="block py-2 px-6 text-sm hover:bg-gray-100">團隊與資源</a>
         </div>
     </header>
@@ -314,6 +316,34 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="ai-planner" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold mb-3">AI排程助理</h2>
+                    <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                        透過串接 Azure OpenAI，我們提供一個安全的排程小幫手，協助護理團隊快速取得符合特殊時段需求與動線效率的訪視建議。
+                    </p>
+                </div>
+                <div class="max-w-4xl mx-auto bg-white shadow-lg rounded-xl p-8 border border-accent-green/30">
+                    <form id="ai-planner-form" class="space-y-6">
+                        <div>
+                            <label for="ai-planner-input" class="block text-sm font-medium text-gray-700 mb-2">輸入個案與路線需求</label>
+                            <textarea id="ai-planner-input" rows="6" class="w-full border border-accent-green/40 rounded-lg p-4 focus:outline-none focus:ring-2 focus:ring-accent-green focus:border-transparent" placeholder="範例：\n- 日期：2025/09/26\n- 出發地：台南市政府前住民服務中心，08:00出發\n- 病人A：...\n- 特殊需求：..." required></textarea>
+                            <p class="text-xs text-gray-500 mt-2">系統會自動帶入專業角色與排程格式要求，僅需補充當天個案的特別需求與限制。</p>
+                        </div>
+                        <button type="submit" class="w-full md:w-auto px-6 py-3 bg-accent-green text-white font-semibold rounded-lg shadow hover:bg-accent-green/90 transition">生成訪視排程</button>
+                    </form>
+                    <div class="mt-8 space-y-4">
+                        <div id="ai-planner-status" class="text-sm text-gray-500"></div>
+                        <div id="ai-planner-loading" class="hidden text-center text-accent-green">
+                            <span class="animate-pulse">AI 正在規劃訪視路線...</span>
+                        </div>
+                        <pre id="ai-planner-result" class="hidden whitespace-pre-wrap bg-soft-earth rounded-lg p-4 text-sm text-gray-700 overflow-x-auto"></pre>
                     </div>
                 </div>
             </div>
@@ -536,6 +566,53 @@
                     }
                 });
             });
+
+            const plannerForm = document.getElementById('ai-planner-form');
+            if (plannerForm) {
+                const input = document.getElementById('ai-planner-input');
+                const statusEl = document.getElementById('ai-planner-status');
+                const loadingEl = document.getElementById('ai-planner-loading');
+                const resultEl = document.getElementById('ai-planner-result');
+
+                plannerForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const prompt = (input.value || '').trim();
+                    if (!prompt) {
+                        statusEl.textContent = '請先輸入至少一項訪視需求。';
+                        return;
+                    }
+
+                    statusEl.textContent = '排程規劃中...';
+                    loadingEl.classList.remove('hidden');
+                    resultEl.classList.add('hidden');
+                    resultEl.textContent = '';
+
+                    try {
+                        const response = await fetch('/api/route-plan', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ prompt })
+                        });
+
+                        if (!response.ok) {
+                            const errorPayload = await response.json().catch(() => ({}));
+                            throw new Error(errorPayload.error || '伺服器發生未知錯誤');
+                        }
+
+                        const data = await response.json();
+                        const content = data.content || 'AI 未回傳任何內容，請稍後再試。';
+                        resultEl.textContent = content;
+                        resultEl.classList.remove('hidden');
+                        statusEl.textContent = '排程完成。';
+                    } catch (error) {
+                        statusEl.textContent = `排程失敗：${error.message}`;
+                    } finally {
+                        loadingEl.classList.add('hidden');
+                    }
+                });
+            }
         });
     </script>
 </body>
